@@ -1,0 +1,1649 @@
+<!DOCTYPE html>
+<html lang="es" class="dark h-full bg-slate-950 text-slate-100 font-sans">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>POLLO BRAVA - POS & Sistema de Control de Pollería</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#fff7ed',
+                            100: '#ffedd5',
+                            500: '#f97316',
+                            600: '#ea580c',
+                            700: '#c2410c',
+                            900: '#7c2d12',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #ea580c;
+        }
+
+        .ticket-paper {
+            font-family: 'Courier New', Courier, monospace;
+            background: #fff;
+            color: #000;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+        }
+        .ticket-paper * {
+            color: #000 !important;
+        }
+    </style>
+</head>
+<body class="h-full flex flex-col antialiased select-none overflow-hidden bg-slate-950 pb-16 md:pb-0">
+
+    <!-- Top Navigation Header -->
+    <header class="h-auto md:h-16 bg-slate-900 border-b border-slate-800 flex flex-col md:flex-row items-stretch md:items-center justify-between p-2.5 md:px-4 shrink-0 z-20 gap-2">
+        <div class="flex items-center justify-between w-full md:w-auto">
+            <div class="flex items-center gap-2 md:gap-3">
+                <div class="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-gradient-to-tr from-amber-600 to-orange-500 flex items-center justify-center text-white shadow-lg shadow-orange-500/20 font-black text-base md:text-xl shrink-0">
+                    <i class="fa-solid fa-drumstick-bite"></i>
+                </div>
+                <div>
+                    <h1 class="font-extrabold text-sm md:text-lg leading-tight tracking-tight text-amber-500 flex items-center gap-1.5 md:gap-2">
+                        POLLO BRAVA 
+                        <span class="bg-amber-500/10 text-amber-400 text-[10px] md:text-xs px-1.5 md:px-2 py-0.5 rounded-full font-semibold border border-amber-500/20">v3.0</span>
+                    </h1>
+                    <div class="flex items-center gap-1.5 md:gap-2 text-[10px] md:text-xs text-slate-400 flex-wrap">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span>Cajero: <strong class="text-slate-200 font-medium" id="current-user">Carlos R.</strong></span>
+                        <span class="text-slate-600 hidden sm:inline">|</span>
+                        <span class="bg-slate-800 text-amber-400 font-bold px-1.5 md:px-2 py-0.5 rounded text-[9px] md:text-[10px] border border-slate-700 flex items-center gap-1">
+                            <i class="fa-solid fa-clock"></i> <span id="header-shift-name">Turno Mañana</span>
+                        </span>
+                        <button onclick="openChangeShiftModal()" class="text-[9px] md:text-[10px] underline text-orange-400 hover:text-orange-300 font-bold ml-0.5">
+                            (Cambiar)
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mobile Quick Stock Display -->
+            <div class="md:hidden text-right font-mono text-[10px]">
+                <div class="text-slate-400 font-sans text-[9px]">Stock</div>
+                <div class="font-bold text-emerald-400" id="header-stock-chickens-mobile">0.00 Ent.</div>
+            </div>
+        </div>
+
+        <!-- Desktop Navigation Tabs (Hidden on Mobile) -->
+        <nav class="hidden md:flex items-center gap-1 bg-slate-950/60 p-1.5 rounded-xl border border-slate-800/80">
+            <button onclick="switchTab('pos')" id="tab-btn-pos" class="tab-btn active flex items-center gap-2 px-3.5 py-2 rounded-lg font-bold text-xs transition-all bg-orange-600 text-white shadow-lg shadow-orange-600/30">
+                <i class="fa-solid fa-calculator"></i>
+                <span>Venta / Caja</span>
+            </button>
+            <button onclick="switchTab('kitchen')" id="tab-btn-kitchen" class="tab-btn flex items-center gap-2 px-3.5 py-2 rounded-lg font-bold text-xs text-slate-400 hover:text-slate-200 transition-all">
+                <i class="fa-solid fa-fire-burner"></i>
+                <span>Cocina / KDS</span>
+                <span id="badge-kitchen-count" class="bg-orange-500/20 text-orange-400 text-[10px] px-1.5 py-0.5 rounded-full border border-orange-500/30 font-bold">0</span>
+            </button>
+            <button onclick="switchTab('reports')" id="tab-btn-reports" class="tab-btn flex items-center gap-2 px-3.5 py-2 rounded-lg font-bold text-xs text-slate-400 hover:text-slate-200 transition-all">
+                <i class="fa-solid fa-chart-column"></i>
+                <span>Reportes e Historial</span>
+            </button>
+            <button onclick="switchTab('inventory')" id="tab-btn-inventory" class="tab-btn flex items-center gap-2 px-3.5 py-2 rounded-lg font-bold text-xs text-slate-400 hover:text-slate-200 transition-all">
+                <i class="fa-solid fa-boxes-stacked"></i>
+                <span>Inventario & Pollos</span>
+            </button>
+            <button onclick="switchTab('closure')" id="tab-btn-closure" class="tab-btn flex items-center gap-2 px-3.5 py-2 rounded-lg font-bold text-xs text-slate-400 hover:text-slate-200 transition-all">
+                <i class="fa-solid fa-vault"></i>
+                <span>Cierre de Turno</span>
+            </button>
+        </nav>
+
+        <!-- System Stats / Time (Desktop) -->
+        <div class="hidden md:flex items-center gap-4 text-xs font-mono">
+            <div class="bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-800 text-right">
+                <div class="text-slate-400 font-sans text-[10px] uppercase tracking-wider">Pollos Disp.</div>
+                <div class="font-bold text-emerald-400 text-sm" id="header-stock-chickens">0.00 Enteros</div>
+            </div>
+            <div class="text-right">
+                <div class="font-bold text-slate-200 text-sm" id="live-clock">00:00:00</div>
+                <div class="text-[10px] text-slate-400 font-sans" id="live-date">--/--/----</div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-1 flex overflow-hidden relative">
+
+        <!-- ================= TAB 1: POS / VENTA ================= -->
+        <section id="tab-pos" class="tab-content flex-1 flex w-full h-full overflow-hidden relative">
+            <!-- Left & Middle: Categories & Products -->
+            <div class="flex-1 flex flex-col min-w-0 bg-slate-950 h-full">
+                <!-- Categories Bar -->
+                <div class="p-2 md:p-3 bg-slate-900/50 border-b border-slate-800/80 overflow-x-auto flex items-center gap-1.5 md:gap-2 scrollbar-none shrink-0">
+                    <button onclick="filterCategory('all')" class="cat-btn active border border-orange-500/50 bg-orange-500/10 text-orange-400 px-3 md:px-4 py-2 md:py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5">
+                        <i class="fa-solid fa-utensils"></i> Todo el Menú
+                    </button>
+                    <button onclick="filterCategory('broaster')" class="cat-btn border border-slate-800 bg-slate-900 text-slate-300 hover:bg-slate-800 px-3 md:px-4 py-2 md:py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5">
+                        <i class="fa-solid fa-drumstick-bite"></i> Broaster
+                    </button>
+                    <button onclick="filterCategory('espiedo')" class="cat-btn border border-slate-800 bg-slate-900 text-slate-300 hover:bg-slate-800 px-3 md:px-4 py-2 md:py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5">
+                        <i class="fa-solid fa-fire"></i> Espiedo
+                    </button>
+                    <button onclick="filterCategory('combos')" class="cat-btn border border-slate-800 bg-slate-900 text-slate-300 hover:bg-slate-800 px-3 md:px-4 py-2 md:py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5">
+                        <i class="fa-solid fa-layer-group"></i> Combos
+                    </button>
+                    <button onclick="filterCategory('sides')" class="cat-btn border border-slate-800 bg-slate-900 text-slate-300 hover:bg-slate-800 px-3 md:px-4 py-2 md:py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5">
+                        <i class="fa-solid fa-bowl-rice"></i> Guarniciones
+                    </button>
+                    <button onclick="filterCategory('drinks')" class="cat-btn border border-slate-800 bg-slate-900 text-slate-300 hover:bg-slate-800 px-3 md:px-4 py-2 md:py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5">
+                        <i class="fa-solid fa-bottle-water"></i> Bebidas
+                    </button>
+                </div>
+
+                <!-- Product Grid -->
+                <div class="flex-1 overflow-y-auto p-2.5 md:p-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2.5 md:gap-3.5 align-content-start pb-20 md:pb-4" id="product-grid">
+                    <!-- Dynamic Product Cards injected here -->
+                </div>
+            </div>
+
+            <!-- Mobile View Cart Button (Floating) -->
+            <button onclick="toggleMobileCart(true)" class="md:hidden fixed bottom-20 right-4 z-30 bg-orange-600 text-white font-extrabold px-4 py-3 rounded-full shadow-2xl flex items-center gap-2 border-2 border-amber-400 active:scale-95 transition-all">
+                <i class="fa-solid fa-cart-shopping text-lg"></i>
+                <span>Ver Orden</span>
+                <span id="mobile-cart-badge" class="bg-amber-400 text-slate-950 px-2 py-0.5 rounded-full text-xs font-mono font-black">0</span>
+            </button>
+
+            <!-- Mobile Cart Backdrop -->
+            <div id="mobile-cart-backdrop" onclick="toggleMobileCart(false)" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-40 md:hidden"></div>
+
+            <!-- Right: Order Cart Panel (Drawer in Mobile) -->
+            <div id="cart-drawer" class="fixed md:relative inset-y-0 right-0 w-full max-w-sm md:w-96 lg:w-[420px] bg-slate-900 border-l border-slate-800 flex flex-col h-full shrink-0 shadow-2xl z-50 transition-transform duration-300 transform translate-x-full md:translate-x-0">
+                <!-- Order Header & Service Type Selection -->
+                <div class="p-3 md:p-3.5 border-b border-slate-800 bg-slate-900/90 space-y-2.5 md:space-y-3">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <button onclick="toggleMobileCart(false)" class="md:hidden text-slate-400 hover:text-white p-1">
+                                <i class="fa-solid fa-arrow-right text-lg"></i>
+                            </button>
+                            <span class="text-slate-400 font-bold text-xs uppercase tracking-wider">Orden Actual:</span>
+                            <span class="font-mono font-extrabold text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 text-sm" id="current-order-number">#001</span>
+                        </div>
+                        <button onclick="clearCart()" class="text-xs text-rose-400 hover:text-rose-300 font-semibold px-2 py-1 rounded bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 transition-all flex items-center gap-1">
+                            <i class="fa-solid fa-trash-can text-[10px]"></i> Limpiar
+                        </button>
+                    </div>
+
+                    <!-- Service Selector (Mesa / Llevar / Delivery) -->
+                    <div class="grid grid-cols-3 gap-1.5 p-1 bg-slate-950 rounded-xl border border-slate-800" id="service-type-selector">
+                        <button onclick="setServiceType('mesa')" id="srv-mesa" class="service-btn active py-2 rounded-lg font-bold text-xs flex flex-col items-center justify-center gap-1 bg-orange-600 text-white transition-all shadow">
+                            <i class="fa-solid fa-utensils"></i>
+                            <span>Mesa</span>
+                        </button>
+                        <button onclick="setServiceType('llevar')" id="srv-llevar" class="service-btn py-2 rounded-lg font-bold text-xs flex flex-col items-center justify-center gap-1 text-slate-400 hover:text-slate-200 transition-all">
+                            <i class="fa-solid fa-bag-shopping"></i>
+                            <span>Llevar</span>
+                        </button>
+                        <button onclick="setServiceType('delivery')" id="srv-delivery" class="service-btn py-2 rounded-lg font-bold text-xs flex flex-col items-center justify-center gap-1 text-slate-400 hover:text-slate-200 transition-all">
+                            <i class="fa-solid fa-motorcycle"></i>
+                            <span>Delivery</span>
+                        </button>
+                    </div>
+
+                    <!-- Extra Context Fields (Mesa # or Client Name) -->
+                    <div id="service-extra-input" class="space-y-1">
+                        <!-- Dynamic Input for Mesa Num / Client info -->
+                    </div>
+                </div>
+
+                <!-- Cart Items Scrollable List -->
+                <div class="flex-1 overflow-y-auto p-3 space-y-2.5 divide-y divide-slate-800/60" id="cart-items-container">
+                    <!-- Dynamic Cart Items injected here -->
+                </div>
+
+                <!-- Cart Footer Summary & Checkout -->
+                <div class="p-3 md:p-4 bg-slate-950 border-t border-slate-800 space-y-2.5 md:space-y-3">
+                    <div class="space-y-1 font-medium text-xs text-slate-400">
+                        <div class="flex justify-between">
+                            <span>Subtotal</span>
+                            <span class="font-mono text-slate-200" id="cart-subtotal">0.00 Bs</span>
+                        </div>
+                        <div class="flex justify-between text-base font-extrabold text-slate-100 pt-1.5 border-t border-slate-800">
+                            <span class="text-amber-500">TOTAL A PAGAR</span>
+                            <span class="font-mono text-xl text-amber-400" id="cart-total">0.00 Bs</span>
+                        </div>
+                    </div>
+
+                    <button onclick="openCheckoutModal()" id="btn-pay-now" disabled class="w-full py-3.5 bg-slate-800 text-slate-500 disabled:opacity-50 font-extrabold text-sm rounded-xl shadow-lg transition-all flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-cash-register text-base"></i>
+                        <span>COBRAR Y DESPACHAR (F9)</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= TAB 2: PANTALLA COCINA (KDS) ================= -->
+        <section id="tab-kitchen" class="tab-content hidden flex-1 flex flex-col p-3 md:p-6 overflow-y-auto bg-slate-950">
+            <div class="max-w-7xl mx-auto w-full space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-800 pb-3 gap-2">
+                    <div>
+                        <h2 class="text-lg md:text-xl font-bold text-slate-100 flex items-center gap-2">
+                            <i class="fa-solid fa-fire-burner text-orange-500"></i> Pantalla Cocina (KDS)
+                        </h2>
+                        <p class="text-xs text-slate-400">Comandas en tiempo real para freidoras y espiedo.</p>
+                    </div>
+                    <div class="flex items-center justify-between sm:justify-end gap-3">
+                        <span class="text-xs text-slate-400 font-mono">Pedidos en Cola: <strong id="kitchen-pending-count" class="text-amber-400">0</strong></span>
+                        <button onclick="renderKitchenKDS()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs px-3 py-1.5 rounded-lg border border-slate-700">
+                            <i class="fa-solid fa-rotate-right"></i> Actualizar
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Active Kitchen Cards Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" id="kitchen-cards-container">
+                    <!-- Dynamic KDS Order Cards -->
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= TAB 3: REPORTES E HISTORIAL ================= -->
+        <section id="tab-reports" class="tab-content hidden flex-1 flex flex-col p-3 md:p-6 overflow-y-auto bg-slate-950">
+            <div class="max-w-7xl mx-auto w-full space-y-4 md:space-y-6">
+                <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 border-b border-slate-800 pb-4">
+                    <div>
+                        <h2 class="text-lg md:text-xl font-bold text-slate-100 flex items-center gap-2">
+                            <i class="fa-solid fa-chart-column text-amber-500"></i> Reportes e Historial
+                        </h2>
+                        <p class="text-xs text-slate-400">Consolidado diario por turnos, resúmenes semanales y mensuales.</p>
+                    </div>
+
+                    <!-- Filter Tabs for Range -->
+                    <div class="flex items-center bg-slate-900 p-1 rounded-xl border border-slate-800 text-[11px] md:text-xs font-bold w-full md:w-auto overflow-x-auto">
+                        <button onclick="setReportRange('daily')" id="btn-rep-daily" class="rep-range-btn active flex-1 md:flex-none px-3 md:px-4 py-2 rounded-lg bg-orange-600 text-white shadow whitespace-nowrap">
+                            Diario (Hoy)
+                        </button>
+                        <button onclick="setReportRange('weekly')" id="btn-rep-weekly" class="rep-range-btn flex-1 md:flex-none px-3 md:px-4 py-2 rounded-lg text-slate-400 hover:text-slate-200 whitespace-nowrap">
+                            7 Días
+                        </button>
+                        <button onclick="setReportRange('monthly')" id="btn-rep-monthly" class="rep-range-btn flex-1 md:flex-none px-3 md:px-4 py-2 rounded-lg text-slate-400 hover:text-slate-200 whitespace-nowrap">
+                            Mensual
+                        </button>
+                    </div>
+                </div>
+
+                <!-- KPI Summary Cards -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+                    <div class="bg-slate-900 border border-slate-800 p-3 md:p-4 rounded-xl space-y-1">
+                        <span class="text-[11px] md:text-xs text-slate-400 font-medium">Recaudación Total</span>
+                        <div class="text-lg md:text-2xl font-mono font-extrabold text-emerald-400" id="rep-kpi-total-money">0.00 Bs</div>
+                        <span class="text-[9px] md:text-[10px] text-slate-500" id="rep-kpi-total-subtext">Período seleccionado</span>
+                    </div>
+                    <div class="bg-slate-900 border border-slate-800 p-3 md:p-4 rounded-xl space-y-1">
+                        <span class="text-[11px] md:text-xs text-slate-400 font-medium">Total Pedidos</span>
+                        <div class="text-lg md:text-2xl font-mono font-bold text-amber-400" id="rep-kpi-total-orders">0</div>
+                        <span class="text-[9px] md:text-[10px] text-slate-500">Comandas finalizadas</span>
+                    </div>
+                    <div class="bg-slate-900 border border-slate-800 p-3 md:p-4 rounded-xl space-y-1">
+                        <span class="text-[11px] md:text-xs text-slate-400 font-medium">Pollos Vendidos</span>
+                        <div class="text-lg md:text-2xl font-mono font-bold text-orange-400" id="rep-kpi-chickens">0.00 Enteros</div>
+                        <span class="text-[9px] md:text-[10px] text-slate-500">Despiece acumulado</span>
+                    </div>
+                    <div class="bg-slate-900 border border-slate-800 p-3 md:p-4 rounded-xl space-y-1">
+                        <span class="text-[11px] md:text-xs text-slate-400 font-medium">Ticket Promedio</span>
+                        <div class="text-lg md:text-2xl font-mono font-bold text-sky-400" id="rep-kpi-avg-ticket">0.00 Bs</div>
+                        <span class="text-[9px] md:text-[10px] text-slate-500">Promedio por cliente</span>
+                    </div>
+                </div>
+
+                <!-- SHIFT BREAKDOWN -->
+                <div id="shift-breakdown-container" class="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+                    <div class="bg-slate-900 border border-slate-800 p-3.5 md:p-4 rounded-xl space-y-2 md:space-y-3">
+                        <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+                            <span class="font-bold text-xs text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                                <i class="fa-solid fa-sun"></i> Turno Mañana / Almuerzo
+                            </span>
+                            <span class="font-mono text-xs text-slate-400" id="rep-shift-morning-orders">0 pedidos</span>
+                        </div>
+                        <div class="flex justify-between items-end">
+                            <span class="text-xs text-slate-400">Total Recaudado:</span>
+                            <span class="font-mono text-lg md:text-xl font-bold text-emerald-400" id="rep-shift-morning-total">0.00 Bs</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-900 border border-slate-800 p-3.5 md:p-4 rounded-xl space-y-2 md:space-y-3">
+                        <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+                            <span class="font-bold text-xs text-indigo-400 uppercase tracking-wider flex items-center gap-1.5">
+                                <i class="fa-solid fa-moon"></i> Turno Tarde / Noche
+                            </span>
+                            <span class="font-mono text-xs text-slate-400" id="rep-shift-night-orders">0 pedidos</span>
+                        </div>
+                        <div class="flex justify-between items-end">
+                            <span class="text-xs text-slate-400">Total Recaudado:</span>
+                            <span class="font-mono text-lg md:text-xl font-bold text-emerald-400" id="rep-shift-night-total">0.00 Bs</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Orders History Table -->
+                <div class="bg-slate-900 rounded-xl border border-slate-800 overflow-hidden shadow-xl">
+                    <div class="p-3 md:p-4 border-b border-slate-800 font-bold text-xs text-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                        <span class="flex items-center gap-2">
+                            <i class="fa-solid fa-list-check text-amber-500"></i> Detalle de Ventas Registradas
+                        </span>
+                        <input type="text" id="search-orders" oninput="renderReportsView()" placeholder="Buscar por # o cliente..." class="w-full sm:w-auto bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-amber-500">
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs text-slate-300">
+                            <thead class="bg-slate-950 text-slate-400 uppercase font-mono text-[10px] md:text-[11px] border-b border-slate-800">
+                                <tr>
+                                    <th class="p-2.5 md:p-3.5"># Pedido</th>
+                                    <th class="p-2.5 md:p-3.5">Fecha / Hora</th>
+                                    <th class="p-2.5 md:p-3.5">Turno</th>
+                                    <th class="p-2.5 md:p-3.5">Servicio</th>
+                                    <th class="p-2.5 md:p-3.5">Detalle Items</th>
+                                    <th class="p-2.5 md:p-3.5">Pago</th>
+                                    <th class="p-2.5 md:p-3.5 text-right">Total (Bs)</th>
+                                    <th class="p-2.5 md:p-3.5 text-center">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="orders-history-tbody" class="divide-y divide-slate-800/60 font-sans">
+                                <!-- Order Rows -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= TAB 4: INVENTARIO & POLLOS ================= -->
+        <section id="tab-inventory" class="tab-content hidden flex-1 flex flex-col p-3 md:p-6 overflow-y-auto bg-slate-950">
+            <div class="max-w-6xl mx-auto w-full space-y-4 md:space-y-6">
+                <div>
+                    <h2 class="text-lg md:text-xl font-bold text-slate-100">Control de Inventario y Conversión</h2>
+                    <p class="text-xs text-slate-400">Rendimiento automático descontado en unidades de Pollo Entero (1 Pollo = 8 Presas / 4 Cuartos).</p>
+                </div>
+
+                <!-- Raw Chicken Equivalent KPI Panel -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+                    <div class="bg-slate-900 border border-slate-800 p-3 md:p-4 rounded-xl space-y-1">
+                        <span class="text-[11px] md:text-xs text-slate-400">Stock Cámaras</span>
+                        <div class="text-xl md:text-2xl font-mono font-bold text-emerald-400" id="inv-stock-enteros">0.00</div>
+                        <span class="text-[9px] md:text-[10px] text-slate-500">Pollos enteros crudos</span>
+                    </div>
+                    <div class="bg-slate-900 border border-slate-800 p-3 md:p-4 rounded-xl space-y-1">
+                        <span class="text-[11px] md:text-xs text-slate-400">Consumo Hoy</span>
+                        <div class="text-xl md:text-2xl font-mono font-bold text-amber-500" id="inv-consumed-today">0.00</div>
+                        <span class="text-[9px] md:text-[10px] text-slate-500">Pollos procesados</span>
+                    </div>
+                    <div class="bg-slate-900 border border-slate-800 p-3 md:p-4 rounded-xl space-y-1">
+                        <span class="text-[11px] md:text-xs text-slate-400">Merma / Pérdidas</span>
+                        <div class="text-xl md:text-2xl font-mono font-bold text-rose-500" id="inv-waste-today">0.00</div>
+                        <span class="text-[9px] md:text-[10px] text-slate-500">Pollos dados de baja</span>
+                    </div>
+                    <div class="col-span-2 sm:col-span-1 bg-slate-900 border border-slate-800 p-3 md:p-4 rounded-xl flex flex-col justify-center gap-2">
+                        <button onclick="openRestockModal()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs py-2 px-3 rounded-lg transition-all flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-plus-circle"></i> Lote de Pollos
+                        </button>
+                        <button onclick="openWasteModal()" class="bg-rose-950/60 hover:bg-rose-900 text-rose-300 border border-rose-800 font-bold text-xs py-2 px-3 rounded-lg transition-all flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-triangle-exclamation"></i> Registrar Merma
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Detailed Insumos Stock Table -->
+                <div class="bg-slate-900 rounded-xl border border-slate-800 overflow-hidden shadow-xl">
+                    <div class="p-3 md:p-4 border-b border-slate-800 font-bold text-xs md:text-sm text-slate-200 flex justify-between items-center">
+                        <span><i class="fa-solid fa-boxes-packing text-amber-500 mr-2"></i> Insumos y Materias Primas</span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs text-slate-300">
+                            <thead class="bg-slate-950 text-slate-400 uppercase font-mono text-[10px] border-b border-slate-800">
+                                <tr>
+                                    <th class="p-3 md:p-3.5">Insumo / Artículo</th>
+                                    <th class="p-3 md:p-3.5">Categoría</th>
+                                    <th class="p-3 md:p-3.5">Stock Actual</th>
+                                    <th class="p-3 md:p-3.5">Factor de Descuento</th>
+                                    <th class="p-3 md:p-3.5 text-center">Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody id="inventory-tbody" class="divide-y divide-slate-800/60">
+                                <!-- Dynamic Stock items -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= TAB 5: CIERRE DE TURNO / ARQUEO ================= -->
+        <section id="tab-closure" class="tab-content hidden flex-1 flex flex-col p-3 md:p-6 overflow-y-auto bg-slate-950">
+            <div class="max-w-4xl mx-auto w-full space-y-4 md:space-y-6">
+                <div>
+                    <h2 class="text-lg md:text-xl font-bold text-slate-100 flex items-center gap-2">
+                        <i class="fa-solid fa-vault text-amber-500"></i> Arqueo y Cierre del <span id="closure-shift-title" class="text-amber-400">Turno Actual</span>
+                    </h2>
+                    <p class="text-xs text-slate-400">Valide el efectivo acumulado en el turno antes de entregar caja.</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                    <!-- Cash Count Form -->
+                    <div class="bg-slate-900 border border-slate-800 p-4 md:p-5 rounded-xl space-y-3 md:space-y-4 shadow-xl">
+                        <h3 class="font-bold text-xs md:text-sm text-amber-500 flex items-center gap-2 border-b border-slate-800 pb-2">
+                            <i class="fa-solid fa-hand-holding-dollar"></i> Conteo Físico en Caja (Bs)
+                        </h3>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-xs text-slate-400 mb-1">Monto Inicial de Caja (Fondo Bs):</label>
+                                <input type="number" id="closure-base-cash" value="100.00" onchange="calculateClosureDiff()" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 md:p-2.5 text-sm font-mono text-slate-100 focus:border-amber-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-slate-400 mb-1">Efectivo Total Físico Contado (Bs):</label>
+                                <input type="number" id="closure-physical-cash" placeholder="0.00" oninput="calculateClosureDiff()" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 md:p-2.5 text-base md:text-lg font-bold font-mono text-emerald-400 focus:border-amber-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-slate-400 mb-1">Cajero que Entrega Turno:</label>
+                                <input type="text" id="closure-cajero-name" value="Carlos R." class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-slate-200">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-slate-400 mb-1">Notas / Observaciones de Cierre:</label>
+                                <textarea id="closure-notes" rows="2" placeholder="Ej: Faltó cambio de 10 Bs por billete roto..." class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-slate-200 focus:border-amber-500"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- System Report Calculated -->
+                    <div class="bg-slate-900 border border-slate-800 p-4 md:p-5 rounded-xl space-y-4 shadow-xl flex flex-col justify-between">
+                        <div>
+                            <h3 class="font-bold text-xs md:text-sm text-slate-200 border-b border-slate-800 pb-2 flex justify-between items-center">
+                                <span><i class="fa-solid fa-calculator text-amber-500 mr-2"></i> Balance del Turno Actual</span>
+                            </h3>
+
+                            <div class="mt-3 md:mt-4 space-y-2 font-mono text-xs">
+                                <div class="flex justify-between text-slate-400">
+                                    <span>Ventas en Efectivo:</span>
+                                    <span class="font-bold text-slate-200" id="sys-sales-cash">0.00 Bs</span>
+                                </div>
+                                <div class="flex justify-between text-slate-400">
+                                    <span>Ventas QR / Transferencia:</span>
+                                    <span class="font-bold text-slate-200" id="sys-sales-qr">0.00 Bs</span>
+                                </div>
+                                <div class="flex justify-between text-slate-400 pt-2 border-t border-slate-800">
+                                    <span>Fondo Inicial:</span>
+                                    <span class="font-bold text-slate-200" id="sys-base-display">100.00 Bs</span>
+                                </div>
+                                <div class="flex justify-between text-slate-200 font-bold text-xs md:text-sm pt-2 border-t border-slate-800">
+                                    <span>Efectivo Esperado:</span>
+                                    <span class="text-amber-400" id="sys-expected-cash">100.00 Bs</span>
+                                </div>
+                                <div class="flex justify-between text-slate-200 font-bold text-xs md:text-sm pt-2 border-t border-slate-800">
+                                    <span>Diferencia:</span>
+                                    <span class="text-slate-400" id="sys-diff-cash">0.00 Bs</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button onclick="confirmShiftClosure()" class="w-full py-3.5 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-extrabold text-xs md:text-sm rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 mt-4">
+                            <i class="fa-solid fa-lock"></i>
+                            <span>CERRAR Y REGISTRAR TURNO</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Mobile Bottom Navigation Bar -->
+    <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-800 flex items-center justify-around py-1.5 px-1 z-30">
+        <button onclick="switchTab('pos')" id="mob-btn-pos" class="mob-nav-btn active flex flex-col items-center justify-center p-1 text-orange-500">
+            <i class="fa-solid fa-calculator text-lg"></i>
+            <span class="text-[10px] font-bold mt-0.5">Venta</span>
+        </button>
+        <button onclick="switchTab('kitchen')" id="mob-btn-kitchen" class="mob-nav-btn flex flex-col items-center justify-center p-1 text-slate-400 relative">
+            <i class="fa-solid fa-fire-burner text-lg"></i>
+            <span class="text-[10px] font-bold mt-0.5">Cocina</span>
+            <span id="mob-badge-kitchen" class="absolute top-0 right-2 bg-orange-500 text-white text-[9px] px-1 rounded-full font-bold">0</span>
+        </button>
+        <button onclick="switchTab('reports')" id="mob-btn-reports" class="mob-nav-btn flex flex-col items-center justify-center p-1 text-slate-400">
+            <i class="fa-solid fa-chart-column text-lg"></i>
+            <span class="text-[10px] font-bold mt-0.5">Reportes</span>
+        </button>
+        <button onclick="switchTab('inventory')" id="mob-btn-inventory" class="mob-nav-btn flex flex-col items-center justify-center p-1 text-slate-400">
+            <i class="fa-solid fa-boxes-stacked text-lg"></i>
+            <span class="text-[10px] font-bold mt-0.5">Stock</span>
+        </button>
+        <button onclick="switchTab('closure')" id="mob-btn-closure" class="mob-nav-btn flex flex-col items-center justify-center p-1 text-slate-400">
+            <i class="fa-solid fa-vault text-lg"></i>
+            <span class="text-[10px] font-bold mt-0.5">Cierre</span>
+        </button>
+    </nav>
+
+    <!-- ================= MODALS & POPUPS ================= -->
+
+    <!-- MODAL: CAMBIO MANUAL DE TURNO -->
+    <div id="modal-change-shift" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 w-full max-w-sm rounded-2xl shadow-2xl p-4 md:p-5 space-y-4">
+            <h3 class="font-bold text-slate-100 text-sm border-b border-slate-800 pb-2 flex items-center gap-2">
+                <i class="fa-solid fa-clock text-amber-500"></i> Seleccionar Turno Activo
+            </h3>
+            <p class="text-xs text-slate-400">Seleccione el turno operacional para registrar las ventas:</p>
+            
+            <div class="space-y-2">
+                <button onclick="setShift('Turno Mañana')" class="w-full py-3 px-4 rounded-xl border border-slate-800 bg-slate-950 hover:bg-slate-800 text-slate-200 font-bold text-xs flex items-center justify-between">
+                    <span class="flex items-center gap-2"><i class="fa-solid fa-sun text-amber-500"></i> Turno Mañana / Almuerzo</span>
+                    <i class="fa-solid fa-chevron-right text-slate-600"></i>
+                </button>
+                <button onclick="setShift('Turno Noche')" class="w-full py-3 px-4 rounded-xl border border-slate-800 bg-slate-950 hover:bg-slate-800 text-slate-200 font-bold text-xs flex items-center justify-between">
+                    <span class="flex items-center gap-2"><i class="fa-solid fa-moon text-indigo-400"></i> Turno Tarde / Noche</span>
+                    <i class="fa-solid fa-chevron-right text-slate-600"></i>
+                </button>
+            </div>
+
+            <div class="flex justify-end pt-2">
+                <button onclick="closeModal('modal-change-shift')" class="px-4 py-2 rounded-xl bg-slate-800 text-xs font-bold text-slate-300">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL MODIFICADORES DE PRESA / GUARNICIÓN -->
+    <div id="modal-modifiers" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 md:p-4">
+        <div class="bg-slate-900 border border-slate-800 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="p-4 border-b border-slate-800 bg-slate-950 flex justify-between items-center">
+                <div>
+                    <h3 class="font-bold text-slate-100 text-sm" id="mod-title">Personalizar Presa & Guarnición</h3>
+                    <p class="text-[11px] text-amber-500 font-mono" id="mod-subtitle">Selecciona las opciones del pollo</p>
+                </div>
+                <button onclick="closeModal('modal-modifiers')" class="text-slate-400 hover:text-slate-200 p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            
+            <div class="p-4 space-y-4 overflow-y-auto" id="mod-body">
+                <!-- Dynamic choices injected here -->
+            </div>
+
+            <div class="p-4 bg-slate-950 border-t border-slate-800 flex justify-end gap-2">
+                <button onclick="closeModal('modal-modifiers')" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-300">Cancelar</button>
+                <button onclick="saveItemModifiers()" class="px-5 py-2 rounded-xl bg-orange-600 hover:bg-orange-500 text-xs font-extrabold text-white shadow-lg shadow-orange-600/30">Agregar a Orden</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL CHECKOUT / COBRO RÁPIDO EN BOLIVIANOS -->
+    <div id="modal-checkout" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 md:p-4 overflow-y-auto">
+        <div class="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col my-auto max-h-[95vh]">
+            <div class="p-3.5 md:p-4 border-b border-slate-800 bg-slate-950 flex justify-between items-center">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-cash-register text-amber-500"></i>
+                    <h3 class="font-bold text-slate-100 text-xs md:text-sm">Procesar Cobro (Bolivianos Bs)</h3>
+                </div>
+                <button onclick="closeModal('modal-checkout')" class="text-slate-400 hover:text-slate-200 p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <div class="p-4 md:p-5 space-y-4 md:space-y-5 overflow-y-auto">
+                <div class="bg-slate-950 p-3 md:p-4 rounded-xl border border-slate-800 text-center space-y-1">
+                    <span class="text-xs text-slate-400 uppercase tracking-widest font-semibold">Total a Cobrar</span>
+                    <div class="text-3xl md:text-4xl font-mono font-extrabold text-amber-400" id="checkout-total-display">0.00 Bs</div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2.5">
+                    <button onclick="setPayMethod('cash')" id="pay-method-cash" class="pay-btn active border-2 border-orange-500 bg-orange-500/10 text-orange-400 p-2.5 md:p-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-money-bill-wave text-base"></i> Efectivo (Bs)
+                    </button>
+                    <button onclick="setPayMethod('qr')" id="pay-method-qr" class="pay-btn border border-slate-800 bg-slate-950 text-slate-400 p-2.5 md:p-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-qrcode text-base"></i> QR Simple / Móvil
+                    </button>
+                </div>
+
+                <!-- CASH CONTAINER -->
+                <div id="pay-cash-container" class="space-y-3">
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">Monto Recibido (Bs):</label>
+                        <div class="relative">
+                            <span class="absolute left-3 top-2.5 md:top-3 text-slate-500 font-mono font-bold">Bs</span>
+                            <input type="number" id="cash-given" oninput="calculateChange()" placeholder="0.00" class="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 md:py-2.5 pl-10 pr-3 text-base md:text-lg font-mono font-bold text-slate-100 focus:border-amber-500 focus:outline-none">
+                        </div>
+                    </div>
+
+                    <div class="flex flex-wrap gap-1.5 md:gap-2" id="quick-cash-buttons">
+                        <!-- Fast Cash buttons -->
+                    </div>
+
+                    <div class="p-3 bg-slate-950 rounded-xl border border-slate-800 flex justify-between items-center">
+                        <span class="text-xs font-bold text-slate-400">CAMBIO / VUELTO:</span>
+                        <span class="text-lg md:text-xl font-mono font-extrabold text-emerald-400" id="cash-change-display">0.00 Bs</span>
+                    </div>
+                </div>
+
+                <!-- QR CONTAINER -->
+                <div id="pay-qr-container" class="hidden text-center space-y-3 p-4 bg-slate-950 rounded-xl border border-slate-800">
+                    <p class="text-xs text-slate-300">Escanee el código QR Simple Bolivia para pagar:</p>
+                    <div class="w-32 h-32 md:w-36 md:h-36 bg-white mx-auto p-2 rounded-xl flex items-center justify-center shadow-lg">
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=POLLO-BRAVA-BOLIVIA" alt="QR Code" class="w-full h-full object-contain">
+                    </div>
+                    <span class="text-[10px] text-emerald-400 font-mono block"><i class="fa-solid fa-circle-check"></i> Verificación automática activada</span>
+                </div>
+            </div>
+
+            <div class="p-3.5 md:p-4 bg-slate-950 border-t border-slate-800 flex gap-2">
+                <button onclick="closeModal('modal-checkout')" class="flex-1 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-300">Cancelar</button>
+                <button onclick="confirmOrderPayment()" class="flex-2 w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs md:text-sm shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-print"></i> COBRAR E IMPRIMIR (Bs)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL TICKET TÉRMICO -->
+    <div id="modal-ticket" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 hidden flex items-center justify-center p-3 md:p-4">
+        <div class="w-full max-w-sm flex flex-col items-center space-y-3 md:space-y-4 max-h-[95vh]">
+            <div id="ticket-printable-area" class="ticket-paper w-full p-4 md:p-6 rounded shadow-2xl text-xs leading-relaxed border-t-8 border-amber-500 overflow-y-auto max-h-[75vh]">
+                <!-- Thermal Ticket HTML -->
+            </div>
+
+            <div class="flex gap-2 w-full">
+                <button onclick="closeModal('modal-ticket')" class="flex-1 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200">
+                    Cerrar
+                </button>
+                <button onclick="window.print()" class="flex-1 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-xs font-bold text-white shadow-lg">
+                    <i class="fa-solid fa-print mr-1"></i> Imprimir
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL INVENTORY RESTOCK -->
+    <div id="modal-restock" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 w-full max-w-md rounded-2xl p-4 md:p-5 space-y-4">
+            <h3 class="font-bold text-slate-100 text-sm border-b border-slate-800 pb-2">Ingresar Lote de Pollos Enteros</h3>
+            <div>
+                <label class="block text-xs text-slate-400 mb-1">Cantidad de Pollos (Enteros):</label>
+                <input type="number" id="restock-qty" placeholder="Ej: 50" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm text-slate-100 font-mono">
+            </div>
+            <div class="flex justify-end gap-2">
+                <button onclick="closeModal('modal-restock')" class="px-4 py-2 rounded-xl bg-slate-800 text-xs font-bold text-slate-300">Cancelar</button>
+                <button onclick="addStockChickens()" class="px-4 py-2 rounded-xl bg-emerald-600 text-xs font-bold text-white">Guardar Ingreso</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL WASTE REGISTRATION -->
+    <div id="modal-waste" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 w-full max-w-md rounded-2xl p-4 md:p-5 space-y-4">
+            <h3 class="font-bold text-rose-400 text-sm border-b border-slate-800 pb-2">Registrar Merma / Pollo Quemado</h3>
+            <div>
+                <label class="block text-xs text-slate-400 mb-1">Equivalente en Pollos Enteros:</label>
+                <input type="number" step="0.25" id="waste-qty" placeholder="Ej: 0.50" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm text-slate-100 font-mono">
+            </div>
+            <div>
+                <label class="block text-xs text-slate-400 mb-1">Motivo / Causa:</label>
+                <input type="text" id="waste-reason" placeholder="Ej: Sobre-cocción en espiedo" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-slate-100">
+            </div>
+            <div class="flex justify-end gap-2">
+                <button onclick="closeModal('modal-waste')" class="px-4 py-2 rounded-xl bg-slate-800 text-xs font-bold text-slate-300">Cancelar</button>
+                <button onclick="registerWaste()" class="px-4 py-2 rounded-xl bg-rose-600 text-xs font-bold text-white">Descontar Merma</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SYSTEM NOTIFICATION TOAST -->
+    <div id="toast" class="fixed bottom-20 md:bottom-5 left-4 right-4 md:right-auto md:left-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 bg-slate-900 border border-slate-700 text-slate-100 px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3">
+        <div id="toast-icon" class="text-amber-500"><i class="fa-solid fa-circle-info"></i></div>
+        <div class="text-xs font-semibold" id="toast-msg">Mensaje de notificación</div>
+    </div>
+
+    <!-- ================= JAVASCRIPT LOGIC ================= -->
+    <script>
+        const APP_STORAGE_KEY = 'POLLO_BRAVA_POS_BOLIVIA_V3';
+
+        // Master Catalog with Bolivian Prices (Bs)
+        const PRODUCTS_CATALOG = [
+            // BROASTER
+            { id: 'p1', name: 'Pollo Económico Broaster', cat: 'broaster', price: 16.00, icon: 'fa-drumstick-bite', reqMod: true, isEconomic: true, chickenFactor: 0.125, desc: '1 Presa a elección + Papas fritas' },
+            { id: 'p2', name: '1/4 Pollo Broaster', cat: 'broaster', price: 22.00, icon: 'fa-drumstick-bite', reqMod: true, isEconomic: false, chickenFactor: 0.25, desc: '2 Presas a elección + Papas fritas' },
+            { id: 'p3', name: '1/2 Pollo Broaster', cat: 'broaster', price: 35.00, icon: 'fa-drumstick-bite', reqMod: true, isEconomic: false, chickenFactor: 0.50, desc: '4 Presas + Papas fritas' },
+            { id: 'p4', name: '1 Pollo Broaster Entero', cat: 'broaster', price: 70.00, icon: 'fa-bucket', reqMod: false, isEconomic: false, chickenFactor: 1.00, desc: '8 Presas + Porción familiar de papas' },
+
+            // ESPIEDO
+            { id: 'p5', name: 'Pollo Económico Espiedo', cat: 'espiedo', price: 16.00, icon: 'fa-fire', reqMod: true, isEconomic: true, chickenFactor: 0.125, desc: '1 Presa al espiedo a elección + Papas' },
+            { id: 'p6', name: '1/4 Pollo al Espiedo', cat: 'espiedo', price: 22.00, icon: 'fa-fire', reqMod: true, isEconomic: false, chickenFactor: 0.25, desc: '2 Presas al espiedo + Papas fritas' },
+            { id: 'p7', name: '1/2 Pollo al Espiedo', cat: 'espiedo', price: 35.00, icon: 'fa-fire', reqMod: true, isEconomic: false, chickenFactor: 0.50, desc: '4 Presas jugosas al espiedo + Papas' },
+            { id: 'p8', name: '1 Pollo Entero Espiedo', cat: 'espiedo', price: 70.00, icon: 'fa-fire-burner', reqMod: false, isEconomic: false, chickenFactor: 1.00, desc: '8 Presas espiedo + Papas familiares' },
+            
+            // COMBOS
+            { id: 'p9', name: 'Combo Mega Familiar', cat: 'combos', price: 95.00, icon: 'fa-layer-group', reqMod: false, isEconomic: false, chickenFactor: 1.25, desc: '1 Pollo Entero + 1/4 Pollo + Papas XXL + Gaseosa 2L' },
+
+            // GUARNICIONES
+            { id: 'p10', name: 'Porción Papas Fritas Extra', cat: 'sides', price: 10.00, icon: 'fa-bowl-rice', reqMod: false, isEconomic: false, chickenFactor: 0.00, desc: 'Papas doradas crocantes' },
+            { id: 'p11', name: 'Porción Arroz Chaufa', cat: 'sides', price: 8.00, icon: 'fa-bowl-food', reqMod: false, isEconomic: false, chickenFactor: 0.00, desc: 'Arroz frito al wok estilo pollería' },
+            { id: 'p13', name: 'Salsas y cremas Extra', cat: 'sides', price: 3.00, icon: 'fa-jar', reqMod: false, isEconomic: false, chickenFactor: 0.00, desc: 'Ají pollero y mayonesa' },
+
+            // BEBIDAS
+            { id: 'p14', name: 'Gaseosa 2 Litros', cat: 'drinks', price: 14.00, icon: 'fa-bottle-water', reqMod: false, isEconomic: false, chickenFactor: 0.00, desc: 'Coca Cola / Mendocina / Cerveza' },
+            { id: 'p15', name: 'Gaseosa Personal 500ml', cat: 'drinks', price: 6.00, icon: 'fa-bottle-droplet', reqMod: false, isEconomic: false, chickenFactor: 0.00, desc: 'Bien fría' },
+            { id: 'p16', name: 'Chicha Morada / Jarra 1L', cat: 'drinks', price: 12.00, icon: 'fa-glass-water', reqMod: false, isEconomic: false, chickenFactor: 0.00, desc: 'Artesanal hervida con especias' }
+        ];
+
+        // Global DB State
+        let db = {
+            orderCounter: 1,
+            activeShift: 'Turno Mañana',
+            stockChickens: 50.00,
+            consumedChickens: 0.00,
+            wasteChickens: 0.00,
+            orders: [],
+            shiftsHistory: []
+        };
+
+        let currentCart = [];
+        let currentServiceType = 'mesa';
+        let serviceMeta = { tableNum: '1', clientName: '' };
+        let activeCategory = 'all';
+        let pendingModItem = null;
+        let selectedPayMethod = 'cash';
+        let reportRangeMode = 'daily';
+
+        window.onload = function() {
+            loadDatabase();
+            initClock();
+            renderProductGrid();
+            renderCart();
+            renderInventoryTable();
+            renderKitchenKDS();
+            renderReportsView();
+            updateClosureStats();
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'F9') {
+                    e.preventDefault();
+                    if (currentCart.length > 0) openCheckoutModal();
+                }
+            });
+        };
+
+        function loadDatabase() {
+            const saved = localStorage.getItem(APP_STORAGE_KEY);
+            if (saved) {
+                try { db = JSON.parse(saved); } catch(e) { console.error('Error DB', e); }
+            }
+            updateShiftHeaderDisplay();
+            updateStockHeader();
+        }
+
+        function saveDatabase() {
+            localStorage.setItem(APP_STORAGE_KEY, JSON.stringify(db));
+            updateStockHeader();
+        }
+
+        function updateStockHeader() {
+            document.getElementById('header-stock-chickens').innerText = `${db.stockChickens.toFixed(2)} Enteros`;
+            document.getElementById('header-stock-chickens-mobile').innerText = `${db.stockChickens.toFixed(2)} Ent.`;
+            document.getElementById('inv-stock-enteros').innerText = db.stockChickens.toFixed(2);
+            document.getElementById('inv-consumed-today').innerText = db.consumedChickens.toFixed(2);
+            document.getElementById('inv-waste-today').innerText = db.wasteChickens.toFixed(2);
+        }
+
+        function initClock() {
+            const update = () => {
+                const now = new Date();
+                document.getElementById('live-clock').innerText = now.toLocaleTimeString('es-ES');
+                document.getElementById('live-date').innerText = now.toLocaleDateString('es-ES');
+            };
+            update();
+            setInterval(update, 1000);
+        }
+
+        /* ================= MOBILE CART DRAWER TOGGLE ================= */
+        function toggleMobileCart(open) {
+            const drawer = document.getElementById('cart-drawer');
+            const backdrop = document.getElementById('mobile-cart-backdrop');
+            if (open) {
+                drawer.classList.remove('translate-x-full');
+                backdrop.classList.remove('hidden');
+            } else {
+                drawer.classList.add('translate-x-full');
+                backdrop.classList.add('hidden');
+            }
+        }
+
+        /* ================= SHIFT MANAGEMENT ================= */
+        function openChangeShiftModal() {
+            document.getElementById('modal-change-shift').classList.remove('hidden');
+        }
+
+        function setShift(shiftName) {
+            db.activeShift = shiftName;
+            saveDatabase();
+            updateShiftHeaderDisplay();
+            closeModal('modal-change-shift');
+            renderReportsView();
+            updateClosureStats();
+            showToast(`Turno cambiado a: ${shiftName}`);
+        }
+
+        function updateShiftHeaderDisplay() {
+            document.getElementById('header-shift-name').innerText = db.activeShift || 'Turno Mañana';
+            document.getElementById('closure-shift-title').innerText = db.activeShift || 'Turno Mañana';
+        }
+
+        /* ================= NAVIGATION ================= */
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            
+            // Desktop tab buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('bg-orange-600', 'text-white', 'shadow-lg');
+                btn.classList.add('text-slate-400');
+            });
+            const activeBtn = document.getElementById(`tab-btn-${tabId}`);
+            if (activeBtn) {
+                activeBtn.classList.add('bg-orange-600', 'text-white', 'shadow-lg');
+                activeBtn.classList.remove('text-slate-400');
+            }
+
+            // Mobile nav buttons
+            document.querySelectorAll('.mob-nav-btn').forEach(btn => {
+                btn.classList.remove('active', 'text-orange-500');
+                btn.classList.add('text-slate-400');
+            });
+            const activeMobBtn = document.getElementById(`mob-btn-${tabId}`);
+            if (activeMobBtn) {
+                activeMobBtn.classList.add('active', 'text-orange-500');
+                activeMobBtn.classList.remove('text-slate-400');
+            }
+
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+
+            if (tabId === 'kitchen') renderKitchenKDS();
+            if (tabId === 'reports') renderReportsView();
+            if (tabId === 'inventory') renderInventoryTable();
+            if (tabId === 'closure') updateClosureStats();
+        }
+
+        /* ================= POS CATEGORIES & PRODUCTS ================= */
+        function filterCategory(cat) {
+            activeCategory = cat;
+            document.querySelectorAll('.cat-btn').forEach(btn => {
+                btn.classList.remove('active', 'border-orange-500/50', 'bg-orange-500/10', 'text-orange-400');
+                btn.classList.add('border-slate-800', 'bg-slate-900', 'text-slate-300');
+            });
+            event.currentTarget.classList.add('active', 'border-orange-500/50', 'bg-orange-500/10', 'text-orange-400');
+            renderProductGrid();
+        }
+
+        function renderProductGrid() {
+            const grid = document.getElementById('product-grid');
+            grid.innerHTML = '';
+
+            const filtered = activeCategory === 'all' 
+                ? PRODUCTS_CATALOG 
+                : PRODUCTS_CATALOG.filter(p => p.cat === activeCategory);
+
+            filtered.forEach(p => {
+                const card = document.createElement('div');
+                card.className = "bg-slate-900 hover:bg-slate-800/80 border border-slate-800/90 rounded-2xl p-3 md:p-3.5 flex flex-col justify-between cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98] hover:border-orange-500/40 shadow-lg group";
+                card.onclick = () => handleProductClick(p);
+
+                card.innerHTML = `
+                    <div class="space-y-1.5 md:space-y-2">
+                        <div class="flex items-center justify-between">
+                            <div class="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-slate-950 border border-slate-800 group-hover:border-orange-500/30 flex items-center justify-center text-orange-400 text-sm md:text-lg shadow-inner">
+                                <i class="fa-solid ${p.icon}"></i>
+                            </div>
+                            <span class="font-mono font-extrabold text-xs md:text-sm text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1.5 md:px-2 py-0.5 rounded-lg">${p.price.toFixed(2)} Bs</span>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-slate-100 text-xs leading-snug group-hover:text-amber-400 transition-colors">${p.name}</h4>
+                            <p class="text-[9px] md:text-[10px] text-slate-400 line-clamp-2 mt-0.5">${p.desc}</p>
+                        </div>
+                    </div>
+                    ${p.reqMod ? `<div class="mt-2 text-[8px] md:text-[9px] font-bold uppercase tracking-wider text-amber-500/80 bg-amber-500/10 px-1.5 md:px-2 py-0.5 rounded w-max"><i class="fa-solid fa-sliders mr-1"></i> Opciones</div>` : ''}
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        /* ================= MODIFIERS SELECTION ================= */
+        function handleProductClick(prod) {
+            if (prod.reqMod) {
+                pendingModItem = { ...prod };
+                openModifiersModal(prod);
+            } else {
+                addToCart(prod, { cut: 'Estándar', side: 'Papas Fritas' });
+            }
+        }
+
+        function openModifiersModal(prod) {
+            document.getElementById('mod-title').innerText = prod.name;
+            const body = document.getElementById('mod-body');
+
+            let cutsHTML = '';
+            if (prod.isEconomic) {
+                cutsHTML = `
+                    <div class="space-y-2">
+                        <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider">1. Selección de Pieza (Elija 1 de las 4 opciones):</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <label class="border border-slate-800 bg-slate-950 p-2.5 md:p-3 rounded-xl flex items-center gap-2 cursor-pointer hover:border-orange-500">
+                                <input type="radio" name="mod-cut" value="Pierna" checked class="accent-orange-500">
+                                <span class="text-xs text-slate-200 font-semibold">Pierna</span>
+                            </label>
+                            <label class="border border-slate-800 bg-slate-950 p-2.5 md:p-3 rounded-xl flex items-center gap-2 cursor-pointer hover:border-orange-500">
+                                <input type="radio" name="mod-cut" value="Muslo" class="accent-orange-500">
+                                <span class="text-xs text-slate-200 font-semibold">Muslo</span>
+                            </label>
+                            <label class="border border-slate-800 bg-slate-950 p-2.5 md:p-3 rounded-xl flex items-center gap-2 cursor-pointer hover:border-orange-500">
+                                <input type="radio" name="mod-cut" value="Pecho" class="accent-orange-500">
+                                <span class="text-xs text-slate-200 font-semibold">Pecho</span>
+                            </label>
+                            <label class="border border-slate-800 bg-slate-950 p-2.5 md:p-3 rounded-xl flex items-center gap-2 cursor-pointer hover:border-orange-500">
+                                <input type="radio" name="mod-cut" value="Ala" class="accent-orange-500">
+                                <span class="text-xs text-slate-200 font-semibold">Ala</span>
+                            </label>
+                        </div>
+                    </div>
+                `;
+            } else {
+                cutsHTML = `
+                    <div class="space-y-2">
+                        <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider">1. Selección de Presa / Pieza:</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <label class="border border-slate-800 bg-slate-950 p-2.5 md:p-3 rounded-xl flex items-center gap-2 cursor-pointer hover:border-orange-500">
+                                <input type="radio" name="mod-cut" value="Pierna / Muslo" checked class="accent-orange-500">
+                                <span class="text-xs text-slate-200 font-semibold">Pierna / Muslo</span>
+                            </label>
+                            <label class="border border-slate-800 bg-slate-950 p-2.5 md:p-3 rounded-xl flex items-center gap-2 cursor-pointer hover:border-orange-500">
+                                <input type="radio" name="mod-cut" value="Pechuga / Ala" class="accent-orange-500">
+                                <span class="text-xs text-slate-200 font-semibold">Pechuga / Ala</span>
+                            </label>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            body.innerHTML = `
+                ${cutsHTML}
+
+                <div class="space-y-2 pt-2 border-t border-slate-800">
+                    <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider">2. Guarnición Principal:</label>
+                    <div class="space-y-1.5">
+                        <label class="border border-slate-800 bg-slate-950 p-2.5 rounded-xl flex items-center gap-2 cursor-pointer hover:border-orange-500">
+                            <input type="radio" name="mod-side" value="Papas Fritas" checked class="accent-orange-500">
+                            <span class="text-xs text-slate-200">Papas Fritas</span>
+                        </label>
+                        <label class="border border-slate-800 bg-slate-950 p-2.5 rounded-xl flex items-center gap-2 cursor-pointer hover:border-orange-500">
+                            <input type="radio" name="mod-side" value="Solo Arroz Chaufa" class="accent-orange-500">
+                            <span class="text-xs text-slate-200">Solo Arroz Chaufa</span>
+                        </label>
+                        <label class="border border-slate-800 bg-slate-950 p-2.5 rounded-xl flex items-center gap-2 cursor-pointer hover:border-orange-500">
+                            <input type="radio" name="mod-side" value="Mixto (Papas + Chaufa)" class="accent-orange-500">
+                            <span class="text-xs text-slate-200">Mixto (Papas + Chaufa)</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="pt-2 border-t border-slate-800">
+                    <label class="block text-xs text-slate-400 mb-1">Nota Especial para Cocina:</label>
+                    <input type="text" id="mod-note" placeholder="Ej: Bien frito, ají aparte..." class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-slate-200 focus:border-amber-500">
+                </div>
+            `;
+
+            document.getElementById('modal-modifiers').classList.remove('hidden');
+        }
+
+        function saveItemModifiers() {
+            if (!pendingModItem) return;
+            const cutChoice = document.querySelector('input[name="mod-cut"]:checked')?.value || 'Estándar';
+            const sideChoice = document.querySelector('input[name="mod-side"]:checked')?.value || 'Papas Fritas';
+            const note = document.getElementById('mod-note')?.value || '';
+
+            addToCart(pendingModItem, { cut: cutChoice, side: sideChoice, note: note });
+            closeModal('modal-modifiers');
+            pendingModItem = null;
+        }
+
+        /* ================= CART MANAGEMENT ================= */
+        function addToCart(prod, options = {}) {
+            const cartKey = prod.id + '-' + (options.cut || '') + '-' + (options.side || '');
+            const existingIndex = currentCart.findIndex(item => item.cartKey === cartKey);
+
+            if (existingIndex > -1) {
+                currentCart[existingIndex].qty += 1;
+            } else {
+                currentCart.push({
+                    cartKey: cartKey,
+                    id: prod.id,
+                    name: prod.name,
+                    price: prod.price,
+                    chickenFactor: prod.chickenFactor,
+                    qty: 1,
+                    cut: options.cut || '',
+                    side: options.side || '',
+                    note: options.note || ''
+                });
+            }
+
+            renderCart();
+            showToast(`Agregado: ${prod.name}`);
+        }
+
+        function updateCartQty(index, delta) {
+            currentCart[index].qty += delta;
+            if (currentCart[index].qty <= 0) {
+                currentCart.splice(index, 1);
+            }
+            renderCart();
+        }
+
+        function clearCart() {
+            currentCart = [];
+            renderCart();
+        }
+
+        function setServiceType(type) {
+            currentServiceType = type;
+            document.querySelectorAll('.service-btn').forEach(btn => {
+                btn.classList.remove('active', 'bg-orange-600', 'text-white', 'shadow');
+                btn.classList.add('text-slate-400');
+            });
+            const activeBtn = document.getElementById(`srv-${type}`);
+            activeBtn.classList.add('bg-orange-600', 'text-white', 'shadow');
+            activeBtn.classList.remove('text-slate-400');
+
+            const extraInput = document.getElementById('service-extra-input');
+            if (type === 'mesa') {
+                extraInput.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs text-slate-400 font-medium">Número de Mesa:</span>
+                        <input type="text" id="input-mesa-num" value="${serviceMeta.tableNum}" onchange="serviceMeta.tableNum=this.value" class="w-20 bg-slate-950 border border-slate-800 rounded px-2 py-1 text-xs font-bold text-center text-amber-400">
+                    </div>
+                `;
+            } else if (type === 'delivery') {
+                extraInput.innerHTML = `
+                    <input type="text" id="input-client-name" placeholder="Nombre Cliente / Teléfono" value="${serviceMeta.clientName}" onchange="serviceMeta.clientName=this.value" class="w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-1 text-xs text-slate-200">
+                `;
+            } else {
+                extraInput.innerHTML = `<span class="text-[11px] text-slate-400 font-mono"><i class="fa-solid fa-circle-info"></i> Ticket Correlativo para Retiro en Mostrador</span>`;
+            }
+        }
+
+        function renderCart() {
+            const container = document.getElementById('cart-items-container');
+            container.innerHTML = '';
+
+            let subtotal = 0;
+            let totalItemCount = 0;
+
+            if (currentCart.length === 0) {
+                container.innerHTML = `
+                    <div class="h-full flex flex-col items-center justify-center text-slate-500 p-6 text-center space-y-2">
+                        <i class="fa-solid fa-basket-shopping text-3xl"></i>
+                        <p class="text-xs font-semibold">El carrito está vacío</p>
+                        <p class="text-[10px] text-slate-600">Seleccione opciones del menú para iniciar el pedido.</p>
+                    </div>
+                `;
+            } else {
+                currentCart.forEach((item, idx) => {
+                    const itemTotal = item.price * item.qty;
+                    subtotal += itemTotal;
+                    totalItemCount += item.qty;
+
+                    const card = document.createElement('div');
+                    card.className = "pt-2 space-y-1";
+                    card.innerHTML = `
+                        <div class="flex justify-between items-start">
+                            <div class="space-y-0.5">
+                                <h5 class="font-bold text-slate-100 text-xs leading-tight">${item.name}</h5>
+                                ${item.cut ? `<span class="text-[10px] text-amber-400 font-mono block"><i class="fa-solid fa-drumstick-bite mr-1"></i> ${item.cut}</span>` : ''}
+                                ${item.side ? `<span class="text-[10px] text-slate-400 block"><i class="fa-solid fa-bowl-rice mr-1"></i> ${item.side}</span>` : ''}
+                                ${item.note ? `<span class="text-[10px] text-rose-400 block italic">"${item.note}"</span>` : ''}
+                            </div>
+                            <span class="font-mono font-bold text-xs text-slate-200">${itemTotal.toFixed(2)} Bs</span>
+                        </div>
+                        <div class="flex items-center justify-between pt-1">
+                            <span class="text-[10px] text-slate-500 font-mono">${item.price.toFixed(2)} Bs c/u</span>
+                            <div class="flex items-center gap-1.5 bg-slate-950 px-2 py-0.5 rounded-lg border border-slate-800">
+                                <button onclick="updateCartQty(${idx}, -1)" class="text-slate-400 hover:text-rose-400 px-1 text-xs font-bold">-</button>
+                                <span class="font-mono font-bold text-xs text-amber-400 px-1.5">${item.qty}</span>
+                                <button onclick="updateCartQty(${idx}, 1)" class="text-slate-400 hover:text-emerald-400 px-1 text-xs font-bold">+</button>
+                            </div>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+            }
+
+            document.getElementById('cart-subtotal').innerText = `${subtotal.toFixed(2)} Bs`;
+            document.getElementById('cart-total').innerText = `${subtotal.toFixed(2)} Bs`;
+            document.getElementById('mobile-cart-badge').innerText = totalItemCount;
+
+            const payBtn = document.getElementById('btn-pay-now');
+            if (currentCart.length > 0) {
+                payBtn.disabled = false;
+                payBtn.classList.remove('bg-slate-800', 'text-slate-500');
+                payBtn.classList.add('bg-gradient-to-r', 'from-amber-600', 'to-orange-600', 'hover:from-amber-500', 'hover:to-orange-500', 'text-white', 'shadow-orange-600/30');
+            } else {
+                payBtn.disabled = true;
+                payBtn.classList.add('bg-slate-800', 'text-slate-500');
+                payBtn.classList.remove('bg-gradient-to-r', 'from-amber-600', 'to-orange-600', 'text-white');
+            }
+
+            document.getElementById('current-order-number').innerText = `#${String(db.orderCounter).padStart(3, '0')}`;
+        }
+
+        /* ================= CHECKOUT & PAYMENT ================= */
+        function openCheckoutModal() {
+            toggleMobileCart(false);
+            const total = currentCart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+            document.getElementById('checkout-total-display').innerText = `${total.toFixed(2)} Bs`;
+
+            const quickDiv = document.getElementById('quick-cash-buttons');
+            quickDiv.innerHTML = '';
+            const fastAmounts = [total, Math.ceil(total / 10) * 10, Math.ceil(total / 50) * 50, 100, 200].filter((v, i, a) => a.indexOf(v) === i && v >= total);
+            
+            fastAmounts.forEach(amt => {
+                const b = document.createElement('button');
+                b.className = "flex-1 min-w-[70px] bg-slate-950 border border-slate-800 hover:border-amber-500 text-xs font-mono font-bold py-1.5 text-slate-300 rounded-lg";
+                b.innerText = `${amt.toFixed(2)} Bs`;
+                b.onclick = () => {
+                    document.getElementById('cash-given').value = amt.toFixed(2);
+                    calculateChange();
+                };
+                quickDiv.appendChild(b);
+            });
+
+            document.getElementById('cash-given').value = total.toFixed(2);
+            calculateChange();
+            setPayMethod('cash');
+            document.getElementById('modal-checkout').classList.remove('hidden');
+        }
+
+        function setPayMethod(method) {
+            selectedPayMethod = method;
+            document.querySelectorAll('.pay-btn').forEach(b => {
+                b.classList.remove('active', 'border-2', 'border-orange-500', 'bg-orange-500/10', 'text-orange-400');
+                b.classList.add('border-slate-800', 'bg-slate-950', 'text-slate-400');
+            });
+
+            const activeBtn = document.getElementById(`pay-method-${method}`);
+            activeBtn.classList.add('border-2', 'border-orange-500', 'bg-orange-500/10', 'text-orange-400');
+
+            if (method === 'cash') {
+                document.getElementById('pay-cash-container').classList.remove('hidden');
+                document.getElementById('pay-qr-container').classList.add('hidden');
+            } else {
+                document.getElementById('pay-cash-container').classList.add('hidden');
+                document.getElementById('pay-qr-container').classList.remove('hidden');
+            }
+        }
+
+        function calculateChange() {
+            const total = currentCart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+            const given = parseFloat(document.getElementById('cash-given').value) || 0;
+            const change = given - total;
+            const display = document.getElementById('cash-change-display');
+            
+            if (change < 0) {
+                display.innerText = "Falta Dinero";
+                display.classList.remove('text-emerald-400');
+                display.classList.add('text-rose-500');
+            } else {
+                display.innerText = `${change.toFixed(2)} Bs`;
+                display.classList.remove('text-rose-500');
+                display.classList.add('text-emerald-400');
+            }
+        }
+
+        function confirmOrderPayment() {
+            const total = currentCart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+            const given = parseFloat(document.getElementById('cash-given').value) || 0;
+            
+            if (selectedPayMethod === 'cash' && given < total) {
+                showToast("El monto ingresado es menor al total", "error");
+                return;
+            }
+
+            const totalChickenDeduction = currentCart.reduce((sum, item) => sum + (item.chickenFactor * item.qty), 0);
+            db.stockChickens -= totalChickenDeduction;
+            db.consumedChickens += totalChickenDeduction;
+
+            const orderObj = {
+                id: db.orderCounter,
+                ticketNum: `#${String(db.orderCounter).padStart(3, '0')}`,
+                shift: db.activeShift || 'Turno Mañana',
+                timestamp: new Date().toISOString(),
+                dateStr: new Date().toLocaleDateString('es-ES'),
+                timeStr: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+                serviceType: currentServiceType,
+                tableOrClient: currentServiceType === 'mesa' ? `Mesa ${serviceMeta.tableNum}` : (currentServiceType === 'delivery' ? serviceMeta.clientName : 'Para Llevar'),
+                items: [...currentCart],
+                total: total,
+                payMethod: selectedPayMethod,
+                cashGiven: selectedPayMethod === 'cash' ? given : total,
+                change: selectedPayMethod === 'cash' ? (given - total) : 0,
+                status: 'En Cocina'
+            };
+
+            db.orders.unshift(orderObj);
+            db.orderCounter += 1;
+
+            saveDatabase();
+            closeModal('modal-checkout');
+            
+            generateThermalTicket(orderObj);
+            document.getElementById('modal-ticket').classList.remove('hidden');
+
+            currentCart = [];
+            renderCart();
+            renderKitchenKDS();
+            showToast(`Venta Registrada Exitosamente! ${orderObj.ticketNum}`);
+        }
+
+        /* ================= KITCHEN DISPLAY SYSTEM (KDS) ================= */
+        function renderKitchenKDS() {
+            const container = document.getElementById('kitchen-cards-container');
+            container.innerHTML = '';
+
+            const pendingOrders = db.orders.filter(o => o.status === 'En Cocina');
+            document.getElementById('kitchen-pending-count').innerText = pendingOrders.length;
+            document.getElementById('badge-kitchen-count').innerText = pendingOrders.length;
+            document.getElementById('mob-badge-kitchen').innerText = pendingOrders.length;
+
+            if (pendingOrders.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full py-12 text-center text-slate-500 space-y-2">
+                        <i class="fa-solid fa-circle-check text-4xl text-slate-700"></i>
+                        <p class="text-sm font-semibold">No hay comandas pendientes en cocina</p>
+                    </div>
+                `;
+                return;
+            }
+
+            pendingOrders.forEach(o => {
+                const card = document.createElement('div');
+                card.className = "bg-slate-900 border-2 border-orange-500/40 rounded-2xl p-4 space-y-3 shadow-xl flex flex-col justify-between";
+                
+                let itemsList = '';
+                o.items.forEach(i => {
+                    itemsList += `
+                        <div class="border-b border-slate-800/80 pb-1.5">
+                            <div class="flex justify-between font-bold text-sm text-slate-100">
+                                <span>${i.qty}x ${i.name}</span>
+                            </div>
+                            ${i.cut ? `<div class="text-xs text-amber-400 font-mono"><i class="fa-solid fa-drumstick-bite mr-1"></i> ${i.cut}</div>` : ''}
+                            ${i.side ? `<div class="text-xs text-slate-400"><i class="fa-solid fa-bowl-rice mr-1"></i> ${i.side}</div>` : ''}
+                            ${i.note ? `<div class="text-xs text-rose-400 italic">"${i.note}"</div>` : ''}
+                        </div>
+                    `;
+                });
+
+                card.innerHTML = `
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+                            <span class="font-mono font-extrabold text-lg text-amber-500">${o.ticketNum}</span>
+                            <span class="text-xs font-bold uppercase px-2 py-0.5 rounded bg-slate-800 text-slate-300">${o.serviceType} (${o.tableOrClient})</span>
+                        </div>
+                        <div class="text-[11px] text-slate-400 font-mono flex justify-between">
+                            <span>Hora: ${o.timeStr}</span>
+                            <span class="text-amber-400 font-semibold">${o.shift}</span>
+                        </div>
+                        <div class="space-y-2 pt-1">
+                            ${itemsList}
+                        </div>
+                    </div>
+                    <button onclick="updateOrderStatus(${o.id}, 'Entregado')" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 mt-3">
+                        <i class="fa-solid fa-check text-sm"></i> DESPACHAR / PEDIDO LISTO
+                    </button>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        /* ================= THERMAL TICKET PRINT SIMULATOR ================= */
+        function generateThermalTicket(order) {
+            const container = document.getElementById('ticket-printable-area');
+            
+            let itemsHTML = '';
+            order.items.forEach(item => {
+                itemsHTML += `
+                    <div style="display:flex; justify-content:space-between; margin-bottom:2px;">
+                        <span>${item.qty}x ${item.name}</span>
+                        <span>${(item.price * item.qty).toFixed(2)} Bs</span>
+                    </div>
+                    ${item.cut ? `<div style="font-size:10px; padding-left:10px;">- Presa: ${item.cut}</div>` : ''}
+                    ${item.side ? `<div style="font-size:10px; padding-left:10px;">- Guarn: ${item.side}</div>` : ''}
+                `;
+            });
+
+            container.innerHTML = `
+                <div style="text-align:center; border-bottom: 1px dashed #000; padding-bottom:8px; margin-bottom:8px;">
+                    <h2 style="font-size:16px; font-weight:bold; margin:0;">POLLO BRAVA BOLIVIA</h2>
+                    <p style="margin:2px 0;">Pollería Broaster & Espiedo</p>
+                    <p style="margin:2px 0;">NIT: 489201029 - Tel: 4455-8899</p>
+                    <p style="margin:2px 0; font-size:10px;">${new Date(order.timestamp).toLocaleString()}</p>
+                </div>
+
+                <div style="text-align:center; margin-bottom:8px; background:#000; color:#fff; padding:4px;">
+                    <span style="font-size:18px; font-weight:bold; color:#fff !important;">PEDIDO ${order.ticketNum}</span><br>
+                    <span style="font-size:11px; text-transform:uppercase; color:#fff !important;">[ ${order.serviceType} - ${order.tableOrClient} ]</span>
+                </div>
+
+                <div style="border-bottom: 1px dashed #000; padding-bottom:8px; margin-bottom:8px;">
+                    ${itemsHTML}
+                </div>
+
+                <div style="border-bottom: 1px dashed #000; padding-bottom:8px; margin-bottom:8px;">
+                    <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:14px;">
+                        <span>TOTAL A PAGAR:</span>
+                        <span>${order.total.toFixed(2)} Bs</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; font-size:10px;">
+                        <span>Forma de Pago:</span>
+                        <span>${order.payMethod.toUpperCase()}</span>
+                    </div>
+                    ${order.payMethod === 'cash' ? `
+                    <div style="display:flex; justify-content:space-between; font-size:10px;">
+                        <span>Monto Recibido:</span>
+                        <span>${order.cashGiven.toFixed(2)} Bs</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; font-size:10px;">
+                        <span>Cambio / Vuelto:</span>
+                        <span>${order.change.toFixed(2)} Bs</span>
+                    </div>
+                    ` : ''}
+                </div>
+
+                <div style="text-align:center; font-size:10px; margin-top:10px;">
+                    <p style="margin:2px 0;">¡Gracias por su preferencia!</p>
+                    <p style="margin:2px 0;">Exija su ticket de control de entrega.</p>
+                </div>
+            `;
+        }
+
+        /* ================= REPORTS & HISTORY TAB ================= */
+        function setReportRange(mode) {
+            reportRangeMode = mode;
+            document.querySelectorAll('.rep-range-btn').forEach(btn => {
+                btn.classList.remove('active', 'bg-orange-600', 'text-white', 'shadow');
+                btn.classList.add('text-slate-400');
+            });
+            const activeBtn = document.getElementById(`btn-rep-${mode}`);
+            activeBtn.classList.add('bg-orange-600', 'text-white', 'shadow');
+            activeBtn.classList.remove('text-slate-400');
+
+            renderReportsView();
+        }
+
+        function renderReportsView() {
+            const tbody = document.getElementById('orders-history-tbody');
+            const search = document.getElementById('search-orders').value.toLowerCase();
+            tbody.innerHTML = '';
+
+            const now = new Date();
+            let filteredOrders = [...db.orders];
+
+            if (reportRangeMode === 'daily') {
+                const todayStr = now.toLocaleDateString('es-ES');
+                filteredOrders = filteredOrders.filter(o => o.dateStr === todayStr);
+                document.getElementById('shift-breakdown-container').classList.remove('hidden');
+            } else if (reportRangeMode === 'weekly') {
+                const sevenDaysAgo = new Date();
+                sevenDaysAgo.setDate(now.getDate() - 7);
+                filteredOrders = filteredOrders.filter(o => new Date(o.timestamp) >= sevenDaysAgo);
+                document.getElementById('shift-breakdown-container').classList.add('hidden');
+            } else if (reportRangeMode === 'monthly') {
+                const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+                filteredOrders = filteredOrders.filter(o => new Date(o.timestamp) >= startOfMonth);
+                document.getElementById('shift-breakdown-container').classList.add('hidden');
+            }
+
+            // Apply search
+            if (search) {
+                filteredOrders = filteredOrders.filter(o => 
+                    o.ticketNum.toLowerCase().includes(search) || 
+                    o.tableOrClient.toLowerCase().includes(search)
+                );
+            }
+
+            // Calculate Metrics
+            const totalMoney = filteredOrders.filter(o => o.status !== 'Anulado').reduce((sum, o) => sum + o.total, 0);
+            const totalOrders = filteredOrders.filter(o => o.status !== 'Anulado').length;
+            const avgTicket = totalOrders > 0 ? totalMoney / totalOrders : 0;
+            
+            let totalChickensConsumed = 0;
+            filteredOrders.filter(o => o.status !== 'Anulado').forEach(o => {
+                o.items.forEach(i => {
+                    totalChickensConsumed += (i.chickenFactor * i.qty);
+                });
+            });
+
+            document.getElementById('rep-kpi-total-money').innerText = `${totalMoney.toFixed(2)} Bs`;
+            document.getElementById('rep-kpi-total-orders').innerText = totalOrders;
+            document.getElementById('rep-kpi-chickens').innerText = `${totalChickensConsumed.toFixed(2)} Enteros`;
+            document.getElementById('rep-kpi-avg-ticket').innerText = `${avgTicket.toFixed(2)} Bs`;
+
+            // Daily Shift Breakdown Calculations
+            const morningOrders = filteredOrders.filter(o => o.shift === 'Turno Mañana' && o.status !== 'Anulado');
+            const nightOrders = filteredOrders.filter(o => o.shift === 'Turno Noche' && o.status !== 'Anulado');
+            
+            const morningTotal = morningOrders.reduce((sum, o) => sum + o.total, 0);
+            const nightTotal = nightOrders.reduce((sum, o) => sum + o.total, 0);
+
+            document.getElementById('rep-shift-morning-orders').innerText = `${morningOrders.length} pedidos`;
+            document.getElementById('rep-shift-morning-total').innerText = `${morningTotal.toFixed(2)} Bs`;
+            document.getElementById('rep-shift-night-orders').innerText = `${nightOrders.length} pedidos`;
+            document.getElementById('rep-shift-night-total').innerText = `${nightTotal.toFixed(2)} Bs`;
+
+            // Render Table Rows
+            if (filteredOrders.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-slate-500">No hay ventas registradas en el período seleccionado.</td></tr>`;
+                return;
+            }
+
+            filteredOrders.forEach(o => {
+                const tr = document.createElement('tr');
+                tr.className = "border-b border-slate-800/40 hover:bg-slate-900/50";
+                
+                const itemsSummary = o.items.map(i => `${i.qty}x ${i.name} (${i.cut || 'std'})`).join(', ');
+
+                tr.innerHTML = `
+                    <td class="p-2.5 md:p-3.5 font-mono font-bold text-amber-500">${o.ticketNum}</td>
+                    <td class="p-2.5 md:p-3.5 font-mono text-slate-400 text-[10px] md:text-[11px]">${o.dateStr} ${o.timeStr}</td>
+                    <td class="p-2.5 md:p-3.5"><span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-amber-400 border border-slate-700">${o.shift}</span></td>
+                    <td class="p-2.5 md:p-3.5 uppercase font-semibold text-slate-300 text-xs">${o.serviceType} <span class="text-slate-500">(${o.tableOrClient})</span></td>
+                    <td class="p-2.5 md:p-3.5 text-slate-300 max-w-xs truncate" title="${itemsSummary}">${itemsSummary}</td>
+                    <td class="p-2.5 md:p-3.5 font-mono uppercase text-slate-400 text-xs">${o.payMethod}</td>
+                    <td class="p-2.5 md:p-3.5 font-mono font-bold text-right text-emerald-400 text-xs">${o.total.toFixed(2)} Bs</td>
+                    <td class="p-2.5 md:p-3.5 text-center space-x-1">
+                        <button onclick="reprintTicket(${o.id})" title="Reimprimir Ticket" class="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded"><i class="fa-solid fa-print"></i></button>
+                        ${o.status !== 'Anulado' ? `<button onclick="updateOrderStatus(${o.id}, 'Anulado')" title="Anular Orden" class="p-1.5 bg-rose-950 hover:bg-rose-800 text-rose-400 rounded"><i class="fa-solid fa-xmark"></i></button>` : ''}
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function reprintTicket(orderId) {
+            const order = db.orders.find(o => o.id === orderId);
+            if (order) {
+                generateThermalTicket(order);
+                document.getElementById('modal-ticket').classList.remove('hidden');
+            }
+        }
+
+        function updateOrderStatus(orderId, newStatus) {
+            const order = db.orders.find(o => o.id === orderId);
+            if (order) {
+                order.status = newStatus;
+                saveDatabase();
+                renderReportsView();
+                renderKitchenKDS();
+                showToast(`Orden ${order.ticketNum} actualizada a ${newStatus}`);
+            }
+        }
+
+        /* ================= INVENTORY TAB ================= */
+        function renderInventoryTable() {
+            const tbody = document.getElementById('inventory-tbody');
+            tbody.innerHTML = '';
+
+            const items = [
+                { name: 'Pollo Entero Crudo (Cámara Frío)', cat: 'Proteína Principal', stock: `${db.stockChickens.toFixed(2)} Pollos`, factor: '1 Pollo = 4 Cuartos / 8 Presas' },
+                { name: 'Papas Cortadas (Saco 25kg)', cat: 'Guarnición Base', stock: '12.5 Sacos', factor: '200g por porción' },
+                { name: 'Arroz Extra (Saco 50kg)', cat: 'Guarnición Base', stock: '3 Sacos', factor: '150g por porción chaufa' },
+                { name: 'Aceite Vegetal (Bidón 20L)', cat: 'Insumo Freidora', stock: '5 Bidones', factor: 'Recambio cada 300 presas' },
+                { name: 'Harina & Especias Broaster', cat: 'Empanizado', stock: '18.0 kg', factor: '50g por presa' },
+                { name: 'Cajas & Empaques Pollo', cat: 'Desechables', stock: '350 Unidades', factor: '1 por pedido llevar' }
+            ];
+
+            items.forEach(i => {
+                const tr = document.createElement('tr');
+                tr.className = "border-b border-slate-800/40 hover:bg-slate-900/50";
+                tr.innerHTML = `
+                    <td class="p-3 md:p-3.5 font-bold text-slate-100">${i.name}</td>
+                    <td class="p-3 md:p-3.5 text-slate-400">${i.cat}</td>
+                    <td class="p-3 md:p-3.5 font-mono font-bold text-emerald-400">${i.stock}</td>
+                    <td class="p-3 md:p-3.5 text-slate-400 text-[11px] font-mono">${i.factor}</td>
+                    <td class="p-3 md:p-3.5 text-center"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400">Óptimo</span></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function openRestockModal() {
+            document.getElementById('modal-restock').classList.remove('hidden');
+        }
+
+        function addStockChickens() {
+            const qty = parseFloat(document.getElementById('restock-qty').value) || 0;
+            if (qty <= 0) return;
+            
+            db.stockChickens += qty;
+            saveDatabase();
+            closeModal('modal-restock');
+            showToast(`Ingresados ${qty} pollos enteros al stock`);
+        }
+
+        function openWasteModal() {
+            document.getElementById('modal-waste').classList.remove('hidden');
+        }
+
+        function registerWaste() {
+            const qty = parseFloat(document.getElementById('waste-qty').value) || 0;
+            if (qty <= 0) return;
+
+            db.stockChickens -= qty;
+            db.wasteChickens += qty;
+            saveDatabase();
+            closeModal('modal-waste');
+            showToast(`Merma de ${qty} pollos registrada`, "error");
+        }
+
+        /* ================= CLOSURE TAB ================= */
+        function updateClosureStats() {
+            const currentShiftOrders = db.orders.filter(o => o.shift === db.activeShift && o.status !== 'Anulado');
+            const cashSales = currentShiftOrders.filter(o => o.payMethod === 'cash').reduce((sum, o) => sum + o.total, 0);
+            const qrSales = currentShiftOrders.filter(o => o.payMethod === 'qr').reduce((sum, o) => sum + o.total, 0);
+            const baseCash = parseFloat(document.getElementById('closure-base-cash').value) || 100.00;
+
+            document.getElementById('sys-sales-cash').innerText = `${cashSales.toFixed(2)} Bs`;
+            document.getElementById('sys-sales-qr').innerText = `${qrSales.toFixed(2)} Bs`;
+            document.getElementById('sys-base-display').innerText = `${baseCash.toFixed(2)} Bs`;
+            document.getElementById('sys-expected-cash').innerText = `${(cashSales + baseCash).toFixed(2)} Bs`;
+            
+            calculateClosureDiff();
+        }
+
+        function calculateClosureDiff() {
+            const currentShiftOrders = db.orders.filter(o => o.shift === db.activeShift && o.status !== 'Anulado');
+            const cashSales = currentShiftOrders.filter(o => o.payMethod === 'cash').reduce((sum, o) => sum + o.total, 0);
+            const baseCash = parseFloat(document.getElementById('closure-base-cash').value) || 100.00;
+            const expected = cashSales + baseCash;
+            const physical = parseFloat(document.getElementById('closure-physical-cash').value) || 0;
+            const diff = physical - expected;
+
+            const diffEl = document.getElementById('sys-diff-cash');
+            if (diff === 0) {
+                diffEl.className = "font-bold text-emerald-400 font-mono";
+                diffEl.innerText = "0.00 Bs (Cuadre Perfecto)";
+            } else if (diff > 0) {
+                diffEl.className = "font-bold text-amber-400 font-mono";
+                diffEl.innerText = `+${diff.toFixed(2)} Bs (Sobrante)`;
+            } else {
+                diffEl.className = "font-bold text-rose-500 font-mono";
+                diffEl.innerText = `-${Math.abs(diff).toFixed(2)} Bs (Faltante)`;
+            }
+        }
+
+        function confirmShiftClosure() {
+            const physical = parseFloat(document.getElementById('closure-physical-cash').value) || 0;
+            const cajero = document.getElementById('closure-cajero-name').value || 'Carlos R.';
+            
+            const closureRecord = {
+                timestamp: new Date().toISOString(),
+                shiftName: db.activeShift,
+                cajero: cajero,
+                physicalCash: physical,
+                notes: document.getElementById('closure-notes').value
+            };
+
+            db.shiftsHistory.unshift(closureRecord);
+            saveDatabase();
+
+            showToast(`Turno ${db.activeShift} cerrado exitosamente.`);
+            
+            // Toggle shift automatically
+            const nextShift = db.activeShift === 'Turno Mañana' ? 'Turno Noche' : 'Turno Mañana';
+            setTimeout(() => {
+                alert(`Cierre de ${db.activeShift} registrado.\n\nSe cambiará al ${nextShift}. El historial general permanece guardado en los Reportes.`);
+                setShift(nextShift);
+                switchTab('pos');
+            }, 500);
+        }
+
+        /* ================= UTILS & MODALS ================= */
+        function closeModal(id) {
+            document.getElementById(id).classList.add('hidden');
+        }
+
+        function showToast(msg, type = 'info') {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-msg').innerText = msg;
+            
+            const icon = document.getElementById('toast-icon');
+            if (type === 'error') {
+                icon.className = "text-rose-500";
+                icon.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i>`;
+            } else {
+                icon.className = "text-amber-500";
+                icon.innerHTML = `<i class="fa-solid fa-circle-check"></i>`;
+            }
+
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
